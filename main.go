@@ -3,19 +3,31 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/yanzay/tbot/v2"
 )
 
 type application struct {
-	client  *tbot.Client
-	votings map[string]*voting
+	client              *tbot.Client
+	customers           map[string]*customer
+	onBoardingCustomers map[string]*onBoardingCustomer
 }
 
-type voting struct {
-	ups   int
-	downs int
+type onBoardingCustomer struct {
+	username    string
+	homeAddress string
+	cellPhone   string
+	description string
+	done        bool
+}
+
+type customer struct {
+	username    string
+	homeAddress string
+	cellPhone   string
+	description string
 }
 
 func mainButtons() *tbot.InlineKeyboardMarkup {
@@ -38,7 +50,7 @@ func mainButtons() *tbot.InlineKeyboardMarkup {
 	}
 }
 
-func (a *application) stat(h tbot.UpdateHandler) tbot.UpdateHandler {
+func (a *application) messageListener(h tbot.UpdateHandler) tbot.UpdateHandler {
 	return func(u *tbot.Update) {
 		start := time.Now()
 		h(u)
@@ -47,30 +59,45 @@ func (a *application) stat(h tbot.UpdateHandler) tbot.UpdateHandler {
 }
 
 func main() {
-	token := "1072843930:AAHrQ4ieqegwF9yyXO31DYHyw4Dn3Cza0A8"
-	bot := tbot.New(token)
+	bot := tbot.New(os.Getenv("TELEGRAM_TOKEN"))
 	app := &application{
-		votings: make(map[string]*voting),
+		customers:           make(map[string]*customer),
+		onBoardingCustomers: make(map[string]*onBoardingCustomer),
 	}
 	app.client = bot.Client()
-	bot.Use(app.stat) // add stat middleware to bot
+	bot.Use(app.messageListener) // add messageListener middleware to bot
 	bot.HandleMessage("/oz", app.ozHandler)
 	bot.HandleMessage("/end", app.endHandler)
+	bot.HandleMessage("/manager", app.mangerHandler)
 	bot.HandleCallback(app.callbackHandler)
 
 	bot.Start()
 }
 
+func (a *application) mangerHandler(m *tbot.Message) {
+	_, _ = a.client.SendMessage(m.Chat.ID, "good morning manager")
+}
+
 func (a *application) endHandler(m *tbot.Message) {
-	msg, _ := a.client.SendMessage(m.Chat.ID, "הזמנה נמצאת בטיפול", tbot.OptInlineKeyboardMarkup(mainButtons()))
-	votingID := fmt.Sprintf("%s:%d", m.Chat.ID, msg.MessageID)
-	a.votings[votingID] = &voting{}
+	_, _ = a.client.SendMessage(m.Chat.ID, "הזמנה נמצאת בטיפול", tbot.OptInlineKeyboardMarkup(mainButtons()))
+
 }
 
 func (a *application) ozHandler(m *tbot.Message) {
-	msg, _ := a.client.SendMessage(m.Chat.ID, ":פעולות", tbot.OptInlineKeyboardMarkup(mainButtons()))
-	votingID := fmt.Sprintf("%s:%d", m.Chat.ID, msg.MessageID)
-	a.votings[votingID] = &voting{}
+	// username := m.Chat.Username
+	// if username == "" {
+	// 	a.client.SendMessage(m.Chat.ID, "הגדר שם משתמש (username)")
+	// 	return
+	// }
+	// _, ok := a.customers[username]
+	// if !ok {
+	// 	a.client.SendMessage(m.Chat.ID, "הזן כתובת הבית")
+	// 	a.onBoardingCustomers[username] = &onBoardingCustomer{
+	// 		username: username,
+	// 	}
+	// 	return
+	// }
+	a.client.SendMessage(m.Chat.ID, ":פעולות", tbot.OptInlineKeyboardMarkup(mainButtons()))
 }
 
 func (a *application) callbackHandler(cq *tbot.CallbackQuery) {
@@ -89,8 +116,12 @@ func (a *application) callbackHandler(cq *tbot.CallbackQuery) {
 ⏱ זמן הגעה משואר 10:20`)
 		return
 	case "new_member":
+
 		a.client.AnswerCallbackQuery(cq.ID, tbot.OptText("משתמש חדש , תהליך רישום החל"))
 		_, _ = a.client.SendMessage(cq.Message.Chat.ID, "הזן כתובת")
+
+		_, _ = a.client.SendMessage("@GolanDeliveryBot", "לקוח חדש , פתיחת כרטיס")
+
 		return
 	}
 
