@@ -102,8 +102,8 @@ func New(users, onBoardUsers, orders *cache.Cache, bot *tbot.Server, manager str
 	bot.Use(a.messageListener) // add messageListener middleware to bot
 	bot.HandleMessage("/start", a.startHandler)
 	bot.HandleMessage("/end", a.endHandler)
-	bot.HandleMessage("/starwork", a.startWorkHandler)
-	bot.HandleMessage("/stopwork", a.stopWorkHandler)
+	bot.HandleMessage("/work", a.startWorkHandler)
+	bot.HandleMessage("/finish", a.stopWorkHandler)
 	bot.HandleCallback(a.callbackHandler)
 
 	return a
@@ -127,6 +127,14 @@ func (a *Application) sendMessage(chatID string, text string) {
 	if _, err := a.bot.SendMessage(chatID, text); err != nil {
 		log.Printf("get an erro when send a message:'%s', ChatID: %s, error: %s", chatID, text, err)
 	}
+}
+
+func (a *Application) sendMessageToManger(msg string) {
+	if a.managerChatID != "" {
+		a.sendMessage(a.managerChatID, msg)
+		return
+	}
+	log.Println("Not has a working manager, discard message", msg)
 }
 
 func (a *Application) sendMainMenu(chatID string) {
@@ -207,7 +215,7 @@ func (a *Application) completeOnboarding(m *tbot.Message) {
 		a.onBoradUsers.Delete(m.Chat.Username) //TODO: create API for delete onboarding users (using for stucking users)
 		log.Printf("delete onboarding user %s", m.Chat.Username)
 
-		a.sendMessage(a.managerChatID, fmt.Sprintf("craete new user %+v", user))
+		a.sendMessageToManger(fmt.Sprintf("craete new user %+v", user))
 		a.sendMessage(m.Chat.ID, fmt.Sprintf("on boarding complete! now you can try your first delivery"))
 		a.sendMainMenu(m.Chat.ID)
 	default:
@@ -239,8 +247,9 @@ func (a *Application) endHandler(m *tbot.Message) {
 			a.sendMessage(m.Chat.ID, "order completed")
 			a.sendMainMenu(m.Chat.ID)
 			
-			a.sendMessage(a.managerChatID, fmt.Sprintf("get an new order:\n %+v", *order)) //TODO: Send order email
-			log.Printf("user %s completed order", )
+			a.sendMessageToManger(fmt.Sprintf("get an new order:\n %+v", *order)) //TODO: Send order email
+			log.Printf("user %s completed order", m.Chat.Username)
+			return
 		}
 		log.Printf("user %s does not have an open order", m.Chat.Username)
 		a.sendMessage(m.Chat.ID, "you dont have an open order")
@@ -258,7 +267,7 @@ func (a *Application) startWorkHandler(m *tbot.Message) {
 			OnboardingState: onboardingComplete,
 		}, cache.DefaultExpiration)
 		a.managerChatID = m.Chat.ID
-		log.Printf("manager %s start working", a.manager)
+		log.Printf("manager %s start working, chatID: %s", a.manager, a.managerChatID)
 		a.sendMessage(m.Chat.ID, "start working")
 		return
 	}
@@ -299,10 +308,10 @@ Elite Black Coffe - 4`)
 			return
 		}
 
-		if a.canOrder(cq.Message.Chat.Username) {
+		if !a.canOrder(cq.Message.Chat.Username) {
 			a.sendMessage(cq.Message.Chat.ID, "delivery unavaible now")
 			return
-		}
+		} 
 
 		if _, err := a.bot.SendMessage(cq.Message.Chat.ID, "Start new delivery", tbot.OptInlineKeyboardMarkup(deliveryTypeButtons())); err != nil {
 			log.Println("get an error when send new order message")
@@ -321,16 +330,15 @@ Elite Black Coffe - 4`)
 func (a *Application) messageListener(h tbot.UpdateHandler) tbot.UpdateHandler {
 	return func(u *tbot.Update) {
 		if u.Message != nil {
-			log.Println("register user validation:", a.validateRegestredUser(u.Message.Chat.Username))
 			switch {
 			case a.onBoardingProcess(u.Message.Chat.Username):
 				a.completeOnboarding(u.Message)
 				return
-			case !a.validateRegestredUser(u.Message.Chat.Username) && (u.Message.Text != "/start"):
+			case (u.Message.Chat.Username != a.manager) && !a.validateRegestredUser(u.Message.Chat.Username) && (u.Message.Text != "/start"):
 				a.sendMessage(u.Message.Chat.ID, "you need complete registration /start")
 				fmt.Printf("user %s require complete registartion", u.Message.Chat.Username)
 				return
-			case a.onOrderProcess(u.Message.Chat.Username):
+			case a.onOrderProcess(u.Message.Chat.Username) && (u.Message.Text != "/end"):
 				a.completeOrder(u.Message)
 				return
 			}
