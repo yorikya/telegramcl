@@ -5,8 +5,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/yorikya/telegramcl/lang"
 	"github.com/patrickmn/go-cache"
 	"github.com/yanzay/tbot/v2"
+
 )
 
 const (
@@ -18,13 +20,13 @@ const (
 	onboardingComplete
 )
 
-func mainButtons() *tbot.InlineKeyboardMarkup {
+func mainButtons(deliveryText, infoText string) *tbot.InlineKeyboardMarkup {
 	button1 := tbot.InlineKeyboardButton{
-		Text:         "🛵 משלוח",
+		Text:         deliveryText,
 		CallbackData: "new_delivery",
 	}
 	button2 := tbot.InlineKeyboardButton{
-		Text:         "📦 הזמנות",
+		Text:         infoText,
 		CallbackData: "delivery_info",
 	}
 
@@ -35,21 +37,21 @@ func mainButtons() *tbot.InlineKeyboardMarkup {
 	}
 }
 
-func deliveryTypeButtons() *tbot.InlineKeyboardMarkup {
+func deliveryTypeButtons(marketText, pharmText, diyText, privateText string) *tbot.InlineKeyboardMarkup {
 	button1 := tbot.InlineKeyboardButton{
-		Text:         "Market",
+		Text:         marketText,
 		CallbackData: "new_market",
 	}
 	button2 := tbot.InlineKeyboardButton{
-		Text:         "Pharm",
+		Text:         pharmText,
 		CallbackData: "new_pharm",
 	}
 	button3 := tbot.InlineKeyboardButton{
-		Text:         "DIY",
+		Text:         diyText,
 		CallbackData: "new_diy",
 	}
 	button4 := tbot.InlineKeyboardButton{
-		Text:         "Private",
+		Text:         privateText,
 		CallbackData: "new_private",
 	}
 	return &tbot.InlineKeyboardMarkup{
@@ -83,7 +85,7 @@ type Application struct {
 	orders       *cache.Cache
 	bot          *tbot.Client
 	botServer    *tbot.Server
-	messageLang,
+	messageLang  lang.Lang
 	manager,
 	managerKey,
 	managerChatID  string 
@@ -97,7 +99,7 @@ func New(users, onBoardUsers, orders *cache.Cache, bot *tbot.Server, manager, me
 		botServer:    bot,
 		bot:          bot.Client(),
 		manager:      manager,
-		messageLang: messageLang,
+		messageLang:  lang.New(messageLang),
 		managerKey:   "--manager",  //Telegram username not accept '--' chars, the manager key can't be oviriten with another username
 	}
 
@@ -141,7 +143,7 @@ func (a *Application) sendMessageToManger(msg string) {
 }
 
 func (a *Application) sendMainMenu(chatID string) {
-	a.bot.SendMessage(chatID, "Main:", tbot.OptInlineKeyboardMarkup(mainButtons()))
+	a.bot.SendMessage(chatID, "Main:", tbot.OptInlineKeyboardMarkup(mainButtons("🛵 משלוח", "📦 הזמנות")))
 }
 
 func (a *Application) canOrder(_ string) bool {
@@ -299,7 +301,8 @@ Elite Black Coffe - 4`)
 			return
 		} 
 
-		if _, err := a.bot.SendMessage(cq.Message.Chat.ID, "New delivery", tbot.OptInlineKeyboardMarkup(deliveryTypeButtons())); err != nil {
+		if _, err := a.bot.SendMessage(cq.Message.Chat.ID, "New delivery", 
+			tbot.OptInlineKeyboardMarkup(deliveryTypeButtons("Market", "Pharm", "DIY", "Private"))); err != nil {
 			log.Println("get an error when send new order message")
 		}
 

@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"time"
-	"fmt"
 
 	"github.com/patrickmn/go-cache"
 	"github.com/yanzay/tbot/v2"
@@ -17,31 +16,18 @@ var (
 	messageLang = ""
 )
 
-func getEnvVarOrDefault(key, defaultVal string) (string, error) {
-	if val := os.Getenv(key); val != "" {
-		return val, nil
-	}
-
-	if defaultVal == ""{
-		return "", fmt.Errorf("environment varaible %s is missing", key)
-	}
-
-	return defaultVal, nil
-}
-
 func init() {
-	var err error
-	telgramToken, err = getEnvVarOrDefault("TELEGRAM_TOKEN", "")
-	if err != nil {
+	telgramToken = os.Getenv("TELEGRAM_TOKEN")
+	if telgramToken == "" {
 		panic("TELEGRAM_TOKEN environment varaible is missing")
 	}
 
-	workManager, err = getEnvVarOrDefault("WORK_MANAGER", "")
-	if err != nil {				
+	workManager = os.Getenv("WORK_MANAGER")
+	if workManager == "" {				
 		panic("WORK_MANAGER environment varaible is missing")
 	}
 
-	messageLang, _ = getEnvVarOrDefault("MESSAGE_LANG", "EN")
+	messageLang = os.Getenv("MESSAGE_LANG")
 }
 
 func main() {
