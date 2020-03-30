@@ -22,11 +22,11 @@ const (
 
 func mainButtons(deliveryText, infoText string) *tbot.InlineKeyboardMarkup {
 	button1 := tbot.InlineKeyboardButton{
-		Text:         deliveryText,
+		Text:         fmt.Sprintf("🛵 %s" , deliveryText),
 		CallbackData: "new_delivery",
 	}
 	button2 := tbot.InlineKeyboardButton{
-		Text:         infoText,
+		Text:         fmt.Sprintf("📦 %s" , infoText),
 		CallbackData: "delivery_info",
 	}
 
@@ -39,19 +39,19 @@ func mainButtons(deliveryText, infoText string) *tbot.InlineKeyboardMarkup {
 
 func deliveryTypeButtons(marketText, pharmText, diyText, privateText string) *tbot.InlineKeyboardMarkup {
 	button1 := tbot.InlineKeyboardButton{
-		Text:         marketText,
+		Text:          fmt.Sprintf("🍞 %s" , marketText),
 		CallbackData: "new_market",
 	}
 	button2 := tbot.InlineKeyboardButton{
-		Text:         pharmText,
+		Text:          fmt.Sprintf("🚑 %s" , pharmText),
 		CallbackData: "new_pharm",
 	}
 	button3 := tbot.InlineKeyboardButton{
-		Text:         diyText,
+		Text:          fmt.Sprintf("🛠 %s" , diyText),
 		CallbackData: "new_diy",
 	}
 	button4 := tbot.InlineKeyboardButton{
-		Text:         privateText,
+		Text:          fmt.Sprintf("🚗 %s" , privateText),
 		CallbackData: "new_private",
 	}
 	return &tbot.InlineKeyboardMarkup{
@@ -128,7 +128,7 @@ func (a *Application) validateRegestredUser(username string) bool {
 }
 
 func (a *Application) sendMessage(chatID, username,  text string) {
-	if _, err := a.bot.SendMessage(chatID, text); err != nil {
+	if _, err := a.bot.SendMessage(chatID, a.messageLang.Translate(text)); err != nil {
 		log.Printf("get an erro when send a message: %s to user: %s, ChatID: %s, error: %s", text, username, chatID, err)
 	}
 	log.Printf("send message to user: %s, message: %s", username, text)
@@ -143,7 +143,8 @@ func (a *Application) sendMessageToManger(msg string) {
 }
 
 func (a *Application) sendMainMenu(chatID string) {
-	a.bot.SendMessage(chatID, "Main:", tbot.OptInlineKeyboardMarkup(mainButtons("🛵 משלוח", "📦 הזמנות")))
+	a.bot.SendMessage(chatID, "Main:", 
+	tbot.OptInlineKeyboardMarkup(mainButtons(a.messageLang.Translate("New Order"), a.messageLang.Translate("Delivery Info"))))
 }
 
 func (a *Application) canOrder(_ string) bool {
@@ -302,11 +303,13 @@ Elite Black Coffe - 4`)
 		} 
 
 		if _, err := a.bot.SendMessage(cq.Message.Chat.ID, "New delivery", 
-			tbot.OptInlineKeyboardMarkup(deliveryTypeButtons("Market", "Pharm", "DIY", "Private"))); err != nil {
+			tbot.OptInlineKeyboardMarkup(deliveryTypeButtons(a.messageLang.Translate("Market"), 
+				a.messageLang.Translate("Pharm"), 
+				a.messageLang.Translate("DIY"),
+				a.messageLang.Translate("Private")))); err != nil {
 			log.Println("get an error when send new order message")
 		}
-
-	case "delivery_info":
+	case "delivery_info"://TODO: Send real data
 		a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username,`קיימת הזמנה 1
 🟢 בטיפול
 ⏱ זמן הגעה משואר 10:20`)
