@@ -83,12 +83,13 @@ type Application struct {
 	orders       *cache.Cache
 	bot          *tbot.Client
 	botServer    *tbot.Server
+	messageLang,
 	manager,
 	managerKey,
 	managerChatID  string 
 }
 
-func New(users, onBoardUsers, orders *cache.Cache, bot *tbot.Server, manager string) *Application {
+func New(users, onBoardUsers, orders *cache.Cache, bot *tbot.Server, manager, messageLang string) *Application {
 	a := &Application{
 		users:        users,
 		onBoradUsers: onBoardUsers,
@@ -96,6 +97,7 @@ func New(users, onBoardUsers, orders *cache.Cache, bot *tbot.Server, manager str
 		botServer:    bot,
 		bot:          bot.Client(),
 		manager:      manager,
+		messageLang: messageLang,
 		managerKey:   "--manager",  //Telegram username not accept '--' chars, the manager key can't be oviriten with another username
 	}
 
@@ -267,7 +269,6 @@ func (a *Application) stopWorkHandler(m *tbot.Message) {
 		a.sendMessage(m.Chat.ID, m.Chat.Username, "finish working")
 		return
 	}
-	
 	a.sendMessage(m.Chat.ID, m.Chat.Username, "you are not authorize")
 }
 
