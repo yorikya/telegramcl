@@ -114,74 +114,77 @@ func NewLangHE() LangHE {
 }
 
 func (LangHE) MainMenu() string {
-	return "Main Menu"
+	return "מסך ראשי"
 }
 func (LangHE)NewDelivery()string {
-	return "New delivery"
+	return "משלוח חדש"
 }
 func (LangHE)DeliveryInfo() string {
-	return "Delivery Info"
+	return "פרטי משלוח"
 }
 func (LangHE)Market()string {
-	return "Market"
+	return "סופר"
 }
 func (LangHE)Pharm()string {
-	return "Pharm"
+	return "פארם"
 }
 func (LangHE)DIY()string {
-	return "DIY"
+	return "כלים"
 }
 func (LangHE)Private()string{
-	return "Private"
+	return "פרטי"
 }
 func (LangHE)EnterPhone()string {
-	return "please enter phone number (ex: 0521234567)"
+	return "הכנם מספר טלפון, לדוגמה: 0521234567"
 }
 func (LangHE)EnterAddress()string {
-	return "please enter adress (ex: Zavitan 9)"
+	return "הכנס שם רחובת ומספר בית לדוגמה: הזויתן 9"
 }
 func (LangHE)EnterCity()string{
-	return "please enter city (ex: Kazerin)"
+	return "הכנם שם העיר לדוגמא: קצרין"
 }
 func (LangHE)EnterDscription()string{
-	return "please enter descritpion for courier (ex: House behind the post office wiht big white gate)"
+	return "הערות לשליח"
 }
 func (LangHE)OnboardingComplete()string{
-	return "on boarding complete! now you can try your first delivery"
+	return "נרשמת בהצלחה"
 }
 func (LangHE)PleaseDefineUserName()string{
-	return "please define @Username in you telegram app"
+	return "אנא הגדר שם משתמש באפליקציית טלגרם שלך @username"
 }
 func (LangHE)ItemAdded()string{
-	return "items added, to finish order /end"
+	return "המוצרים נוספו לרשימה כדי לסיים את ההזמנה /end"
 }
 
 func (LangHE)CompleteOrderError()string{
-	return "complete order, somthing went wrong"
+	return "השלמת הזמנה נחשלה"
 }
 func (LangHE)OrderComplited()string {
-	return "order completed"
+	return "הזמנה בוצע"
 }
 func (LangHE)DontHaveOpenOrder()string{
-	return "you dont have an open order"
+	return "לא קיימת הזמנה פתוחה"
 }
 func (LangHE)EndOrderError()string{
-	return "end order error"
+	return "סגירת הזמנה נכשלה"
 }
 func (LangHE)NotAuthorize()string{
-	return "you are not authorize"
+	return "אינך מורשה להצעה פעולה"
 }
 func (LangHE)OrderItemListExample()string{
-	return "please send items list with new line seperator\nExample:\nMilk 3% - 1\nElite Black Coffe - 4"
+	return `אנא הזן רשימה , תקפיד על מוצר חדש בכל שורהת לדוגמה
+
+חלב 3% - 2
+לחם אחיד פרוס - 1`
 }
 func (LangHE)GeneralError()string{
-	return "somthing went wrong"
+	return "משהו לא התנהל כשורה"
 }
 func (LangHE)DeliveryUnavaible()string {
-	return "delivery unavaible now"
+	return "לא ניתן לבצעה משלוח כרגע"
 }
 func (LangHE)CompleteRegistartion()string {
-	return "you need complete registration /start"
+	return "אנא השלם תהליך רישום /start"
 }
 
 func New(l string) Lang {
