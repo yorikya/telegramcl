@@ -128,7 +128,7 @@ func (a *Application) validateRegestredUser(username string) bool {
 }
 
 func (a *Application) sendMessage(chatID, username,  text string) {
-	if _, err := a.bot.SendMessage(chatID, a.messageLang.Translate(text)); err != nil {
+	if _, err := a.bot.SendMessage(chatID, text); err != nil {
 		log.Printf("get an erro when send a message: %s to user: %s, ChatID: %s, error: %s", text, username, chatID, err)
 	}
 	log.Printf("send message to user: %s, message: %s", username, text)
@@ -143,8 +143,8 @@ func (a *Application) sendMessageToManger(msg string) {
 }
 
 func (a *Application) sendMainMenu(chatID string) {
-	a.bot.SendMessage(chatID, "Main:", 
-	tbot.OptInlineKeyboardMarkup(mainButtons(a.messageLang.Translate("New Order"), a.messageLang.Translate("Delivery Info"))))
+	a.bot.SendMessage(chatID, a.messageLang.MainMenu(), 
+	tbot.OptInlineKeyboardMarkup(mainButtons(a.messageLang.NewDelivery(), a.messageLang.DeliveryInfo())))
 }
 
 func (a *Application) canOrder(_ string) bool {
@@ -157,11 +157,11 @@ func (a *Application) completeOrder(m *tbot.Message) {
 		order := o.(*Order)
 		order.Items = append(order.Items, m.Text)
 		
-		a.sendMessage(m.Chat.ID, m.Chat.Username, "items added, to finish order /end")
+		a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.ItemAdded())
 		return
 	}
 	
-	a.sendMessage(m.Chat.ID, m.Chat.Username, "complete order, somthing went wrong")
+	a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.CompleteOrderError())
 }
 
 func (a *Application) onBoardingProcess(username string) bool {
@@ -179,7 +179,7 @@ func (a *Application) startOnBoarding(username, chatID string) {
 	a.onBoradUsers.Set(username, &User{
 		Username: username,
 	}, cache.DefaultExpiration)
-	a.sendMessage(chatID, username,"please enter phone number (ex: 0521234567)")
+	a.sendMessage(chatID, username,a.messageLang.EnterPhone())
 }
 
 func (a *Application) completeOnboarding(m *tbot.Message) {
@@ -194,15 +194,15 @@ func (a *Application) completeOnboarding(m *tbot.Message) {
 	case phoneRequire:
 		user.Phone = m.Text //TODO: Validate phone number
 		user.OnboardingState = addressRequire
-		a.sendMessage(m.Chat.ID, m.Chat.Username,"please enter adress (ex: Zavitan 9)")
+		a.sendMessage(m.Chat.ID, m.Chat.Username,a.messageLang.EnterAddress())
 	case addressRequire:
 		user.Address = m.Text
 		user.OnboardingState = cityRequire
-		a.sendMessage(m.Chat.ID, m.Chat.Username,"please enter city (ex: Kazerin)")
+		a.sendMessage(m.Chat.ID, m.Chat.Username,a.messageLang.EnterCity())
 	case cityRequire:
 		user.City = m.Text
 		user.OnboardingState = descriptionRequire
-		a.sendMessage(m.Chat.ID, m.Chat.Username, "please enter descritpion for courier (ex: House behind the post office wiht big white gate)")
+		a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.EnterDscription())
 	case descriptionRequire:
 		user.Description = m.Text
 		user.OnboardingState = onboardingComplete
@@ -211,8 +211,7 @@ func (a *Application) completeOnboarding(m *tbot.Message) {
 
 		a.onBoradUsers.Delete(m.Chat.Username) //TODO: create API for delete onboarding users (using for stucking users)
 
-		a.sendMessageToManger(fmt.Sprintf("craete new user %+v", user))
-		a.sendMessage(m.Chat.ID, m.Chat.Username, fmt.Sprintf("on boarding complete! now you can try your first delivery"))
+		a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.OnboardingComplete())
 		a.sendMainMenu(m.Chat.ID)
 	default:
 		log.Printf("unknown user state, user: '%s', state: %d", m.Chat.Username, user.OnboardingState)
@@ -221,7 +220,7 @@ func (a *Application) completeOnboarding(m *tbot.Message) {
 
 func (a *Application) startHandler(m *tbot.Message) {
 	if a.validateUserInfo(m.Chat) {
-		a.sendMessage(m.Chat.ID, "<nil>","please define @Username in you telegram app")
+		a.sendMessage(m.Chat.ID, "<nil>",a.messageLang.PleaseDefineUserName())
 		return
 	}
 
@@ -240,16 +239,16 @@ func (a *Application) endHandler(m *tbot.Message) {
 			order.Complete = true
 			order.EndTime = time.Now()
 			a.orders.Delete(m.Chat.Username)
-			a.sendMessage(m.Chat.ID, m.Chat.Username, "order completed")
+			a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.OrderComplited())
 			a.sendMainMenu(m.Chat.ID)
 			
 			a.sendMessageToManger(fmt.Sprintf("get an new order:\n %+v", *order)) //TODO: Send order email
 			return
 		}
-		a.sendMessage(m.Chat.ID, m.Chat.Username, "you dont have an open order")
+		a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.DontHaveOpenOrder())
 		return
 	}
-	a.sendMessage(m.Chat.ID, m.Chat.Username, "end order error")
+	a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.EndOrderError())
 }
 
 func (a *Application) startWorkHandler(m *tbot.Message) {
@@ -263,16 +262,16 @@ func (a *Application) startWorkHandler(m *tbot.Message) {
 		a.sendMessageToManger("start working, to finish work /finish")
 		return
 	}
-	a.sendMessage(m.Chat.ID, m.Chat.Username, "you are not authorize")
+	a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.NotAuthorize())
 }
 
 func (a *Application) stopWorkHandler(m *tbot.Message) {
 	if m.Chat.Username == a.manager {
+		a.sendMessageToManger("finish working")
 		a.users.Delete(a.managerKey)
-		a.sendMessage(m.Chat.ID, m.Chat.Username, "finish working")
 		return
 	}
-	a.sendMessage(m.Chat.ID, m.Chat.Username, "you are not authorize")
+	a.sendMessage(m.Chat.ID, m.Chat.Username, a.messageLang.NotAuthorize())
 }
 
 func (a *Application) callbackHandler(cq *tbot.CallbackQuery) {
@@ -284,29 +283,26 @@ func (a *Application) callbackHandler(cq *tbot.CallbackQuery) {
 				StartTime: time.Now(),
 				OrderType: cq.Data,
 			}, cache.DefaultExpiration)
-			a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username, `please send items list with new line seperator
-Example:
-Milk 3% - 1
-Elite Black Coffe - 4`)
+			a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username, a.messageLang.OrderItemListExample())
 			return
 		}
-		a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username, "somthing went wrong")
+		a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username, a.messageLang.GeneralError())
 	case "new_delivery":
 		if !a.validateRegestredUser(cq.Message.Chat.Username) {
-			a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username, "somthing went wrong")
+			a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username, a.messageLang.GeneralError())
 			return
 		}
 
 		if !a.canOrder(cq.Message.Chat.Username) {
-			a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username, "delivery unavaible now")
+			a.sendMessage(cq.Message.Chat.ID, cq.Message.Chat.Username, a.messageLang.DeliveryUnavaible())
 			return
 		} 
 
-		if _, err := a.bot.SendMessage(cq.Message.Chat.ID, "New delivery", 
-			tbot.OptInlineKeyboardMarkup(deliveryTypeButtons(a.messageLang.Translate("Market"), 
-				a.messageLang.Translate("Pharm"), 
-				a.messageLang.Translate("DIY"),
-				a.messageLang.Translate("Private")))); err != nil {
+		if _, err := a.bot.SendMessage(cq.Message.Chat.ID, a.messageLang.NewDelivery(), 
+			tbot.OptInlineKeyboardMarkup(deliveryTypeButtons(a.messageLang.Market(), 
+				a.messageLang.Pharm(), 
+				a.messageLang.DIY(),
+				a.messageLang.Private()))); err != nil {
 			log.Println("get an error when send new order message")
 		}
 	case "delivery_info"://TODO: Send real data
@@ -324,7 +320,7 @@ func (a *Application) messageListener(h tbot.UpdateHandler) tbot.UpdateHandler {
 				a.completeOnboarding(u.Message)
 				return
 			case (u.Message.Chat.Username != a.manager) && !a.validateRegestredUser(u.Message.Chat.Username) && (u.Message.Text != "/start"):
-				a.sendMessage(u.Message.Chat.ID, u.Message.Chat.Username, "you need complete registration /start")
+				a.sendMessage(u.Message.Chat.ID, u.Message.Chat.Username, a.messageLang.CompleteRegistartion())
 				return
 			case a.onOrderProcess(u.Message.Chat.Username) && (u.Message.Text != "/end"):
 				a.completeOrder(u.Message)
